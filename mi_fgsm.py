@@ -18,6 +18,7 @@ import tensorflow as tf
 
 
 from nets import inception_v3, inception_v4, inception_resnet_v2, resnet_v2
+import constants
 
 import random
 
@@ -41,7 +42,7 @@ tf.flags.DEFINE_float('prob', 0.5, 'probability of using diverse inputs.')
 
 tf.flags.DEFINE_integer('image_resize', 331, 'Height of each input images.')
 
-tf.flags.DEFINE_string('checkpoint_path', './models',
+tf.flags.DEFINE_string('checkpoint_path', constants.MODEL_DIR,
                        'Path to checkpoint for pretained models.')
 
 tf.flags.DEFINE_string('input_dir', './dev_data/val_rs',
@@ -144,7 +145,7 @@ def graph(x, y, i, x_max, x_min, grad):
 
     with slim.arg_scope(inception_v3.inception_v3_arg_scope()):
         logits_v3, end_points_v3 = inception_v3.inception_v3(
-            x, num_classes=num_classes, is_training=False, reuse=tf.AUTO_REUSE)
+            x, num_classes=num_classes, is_training=False, reuse=tf.AUTO_REUSE, scope='AdvInceptionV3')
 
     pred = tf.argmax(end_points_v3['Predictions'], 1)
 
@@ -230,25 +231,25 @@ def main(_):
         x_adv, _, _, _, _, _ = tf.while_loop(stop, graph, [x_input, y, i, x_max, x_min, grad])
 
         # Run computation
-        s1 = tf.train.Saver(slim.get_model_variables(scope='InceptionV3'))
+        # s1 = tf.train.Saver(slim.get_model_variables(scope='InceptionV3'))
         # s2 = tf.train.Saver(slim.get_model_variables(scope='InceptionV4'))
         # s3 = tf.train.Saver(slim.get_model_variables(scope='InceptionResnetV2'))
         # s4 = tf.train.Saver(slim.get_model_variables(scope='resnet_v2'))
         # s5 = tf.train.Saver(slim.get_model_variables(scope='Ens3AdvInceptionV3'))
         # s6 = tf.train.Saver(slim.get_model_variables(scope='Ens4AdvInceptionV3'))
         # s7 = tf.train.Saver(slim.get_model_variables(scope='EnsAdvInceptionResnetV2'))
-        # s8 = tf.train.Saver(slim.get_model_variables(scope='AdvInceptionV3'))
+        s8 = tf.train.Saver(slim.get_model_variables(scope='AdvInceptionV3'))
         config = tf.ConfigProto(allow_soft_placement=True)
         config.gpu_options.allow_growth = True
         with tf.Session(config=config) as sess:
-            s1.restore(sess, model_checkpoint_map['inception_v3'])
+            # s1.restore(sess, model_checkpoint_map['inception_v3'])
             # s2.restore(sess, model_checkpoint_map['inception_v4'])
             # s3.restore(sess, model_checkpoint_map['inception_resnet_v2'])
             # s4.restore(sess, model_checkpoint_map['resnet_v2'])
             # s5.restore(sess, model_checkpoint_map['ens3_adv_inception_v3'])
             # s6.restore(sess, model_checkpoint_map['ens4_adv_inception_v3'])
             # s7.restore(sess, model_checkpoint_map['ens_adv_inception_resnet_v2'])
-            # s8.restore(sess, model_checkpoint_map['adv_inception_v3'])
+            s8.restore(sess, model_checkpoint_map['adv_inception_v3'])
             
             idx = 0
             l2_diff = 0

@@ -18,8 +18,8 @@ from tensorflow.contrib.image import rotate as images_rotate
 
 import tensorflow as tf
 
-
 from nets import inception_v3, inception_v4, inception_resnet_v2, resnet_v2
+import constants
 
 import random
 
@@ -47,7 +47,7 @@ tf.flags.DEFINE_float('prob', 0.5, 'probability of using diverse inputs.')
 
 tf.flags.DEFINE_integer('image_resize', 331, 'Height of each input images.')
 
-tf.flags.DEFINE_string('checkpoint_path', './models',
+tf.flags.DEFINE_string('checkpoint_path', constants.MODEL_DIR,
                        'Path to checkpoint for pretained models.')
 
 tf.flags.DEFINE_string('input_dir', './dev_data/val_rs',

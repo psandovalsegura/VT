@@ -2,16 +2,19 @@
 """Evaluate the attack success rate under 8 models including normal training models and adversarial training models"""
 
 import os
+import argparse
 import random
 import numpy as np
 import tensorflow as tf
 from imageio import imread
 import pandas as pd
 from nets import inception_v3, inception_v4, inception_resnet_v2, resnet_v2
+from tqdm import tqdm
+import constants
 
 slim = tf.contrib.slim
 
-checkpoint_path = './models'
+checkpoint_path = constants.MODEL_DIR
 model_checkpoint_map = {
     'inception_v3': os.path.join(checkpoint_path, 'inception_v3.ckpt'),
     'adv_inception_v3': os.path.join(checkpoint_path, 'adv_inception_v3_rename.ckpt'),
@@ -61,8 +64,14 @@ def load_images(input_dir, batch_shape):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input_dir', default='./outputs',
+                        help='path to input directory')
+    args = parser.parse_args()
+    print(args)
+
     f2l = load_labels('./dev_data/val_rs.csv')
-    input_dir = './outputs'
+    input_dir = args.input_dir
 
     batch_shape = [50, 299, 299, 3]
     num_classes = 1001
@@ -134,12 +143,11 @@ if __name__ == '__main__':
             model_name = ['inception_v3', 'inception_v4', 'inception_resnet_v2',
                           'resnet_v2', 'ens3_adv_inception_v3', 'ens4_adv_inception_v3',
                           'ens_adv_inception_resnet_v2', 'adv_inception_v3']
-            success_count = np.zeros(len(model_name))
+            success_count = np.zeros(len(model_name), dtype=np.int16)
 
             idx = 0
-            for filenames, images in load_images(input_dir, batch_shape):
+            for filenames, images in tqdm(load_images(input_dir, batch_shape)):
                 idx += 1
-                print("start the i={} eval".format(idx))
                 v3, adv_v3, ens3_adv_v3, ens4_adv_v3, v4, res_v2, ens_adv_res_v2, resnet = sess.run(
                     (pred_v3, pred_adv_v3, pred_ens3_adv_v3, pred_ens4_adv_v3, pred_v4, pred_res_v2,
                      pred_ens_adv_res_v2, pred_resnet), feed_dict={x_input: images})
@@ -154,5 +162,10 @@ if __name__ == '__main__':
                             success_count[i] += 1
 
             for i in range(len(model_name)):
-                print("Attack Success Rate for {0} : {1:.1f}%".format(model_name[i], success_count[i] / 1000. * 100))
+                print("Attack Success Rate for {0} : {1:.1f}% ({2} / {3})".format(model_name[i], success_count[i] / 1000. * 100, success_count[i], 1000))
 
+            # Print to copy into table
+            for i in range(len(model_name)):
+                print(f'{success_count[i] / 1000. * 100:.1f}', end='\t')
+            print('')
+            
